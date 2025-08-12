@@ -29,5 +29,5 @@ COPY . .
 # Expose the port Gunicorn will listen on
 EXPOSE 8000
 
-# Command to run the application with Gunicorn using a single worker to save memory
-CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app:app", "--workers", "1"]
+# Command to run the application with Gunicorn using a single worker and a longer timeout
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app:app", "--workers", "1", "--timeout", "300"]
