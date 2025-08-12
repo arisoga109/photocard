@@ -1,7 +1,8 @@
-# ใช้ Python เวอร์ชัน 3.10 เป็น Base Image
-FROM python:3.10-slim
+# Stage 1: Build Stage
+# Use a larger Python image with build tools
+FROM python:3.10 as builder
 
-# ติดตั้งแพ็กเกจของระบบปฏิบัติการที่จำเป็นสำหรับ OpenCV และไลบรารีอื่นๆ
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libsm6 \
@@ -9,21 +10,24 @@ RUN apt-get update && apt-get install -y \
     libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# กำหนด Working Directory
+# Set working directory
 WORKDIR /app
 
-# คัดลอกไฟล์ requirements.txt
+# Copy and install dependencies
 COPY requirements.txt .
-
-# ติดตั้งไลบรารี Python จากไฟล์ requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# คัดลอกโค้ดส่วนที่เหลือของโปรเจกต์
+# Stage 2: Production Stage
+# Use a smaller, cleaner image for the final app
+FROM python:3.10-slim
+
+# Copy only the necessary files from the builder stage
+WORKDIR /app
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY . .
 
-# กำหนด Port ที่ Gunicorn จะใช้งาน
+# Expose the port Gunicorn will listen on
 EXPOSE 8000
 
-# คำสั่งหลักในการรันแอปพลิเคชันด้วย Gunicorn
-# Gunicorn จะใช้ไฟล์ app.py และรัน Flask App ที่ชื่อว่า app
+# Command to run the application with Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
